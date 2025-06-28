@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar Novo Paciente</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; background-color: #f4f4f9; }
+        h1 { color: #333; }
+        form { background-color: white; padding: 2em; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        label { display: block; margin-bottom: 0.5em; font-weight: bold; }
+        input[type="text"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 1em;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        button { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; }
+        button:hover { background-color: #0056b3; }
+        a { color: #007bff; text-decoration: none; display: inline-block; margin-bottom: 1em;}
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('painel_diario') }}">&larr; Voltar para a lista</a>
+    <h1>Cadastrar Novo Paciente</h1>
+    <form action="{{ url_for('salvar_paciente') }}" method="POST">
+        <label for="nome">Nome Completo:</label>
+        <input type="text" id="nome" name="nome" required>
+
+        <label for="idade">Idade:</label>
+        <input type="number" id="idade" name="idade" required>
+
+        <label for="leito">Leito:</label>
+        <input type="text" id="leito" name="leito" required>
+
+        <label for="unidade">Unidade de Internação:</label>
+        <select id="unidade" name="unidade" required>
+            <option value="1ª Enfermaria">1ª Enfermaria</option>
+            <option value="2ª Enfermaria">2ª Enfermaria</option>
+            <option value="3ª Enfermaria">3ª Enfermaria</option>
+            <option value="UTI">UTI (Unidade de Terapia Intensiva)</option>
+        </select>
+
+        <label for="diagnostico">Breve Diagnóstico / Motivo da Internação:</label>
+        <textarea id="diagnostico" name="diagnostico" rows="3" required></textarea>
+        
+        <button type="submit">Cadastrar Paciente</button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Trabalho Diário</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; background-color: #f4f4f9; }
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        h1, h2 { color: #333; }
+        .unidade-bloco { background-color: white; padding: 1em 2em; margin-top: 1.5em; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .paciente-item { border-bottom: 1px solid #eee; padding: 1em 0; }
+        .paciente-item:last-child { border-bottom: none; }
+        .paciente-info strong { font-size: 1.2em; }
+        .paciente-info em { color: #555; }
+        .atendimento-controles { margin-top: 0.5em; }
+        .atendimento-controles label { margin-right: 1em; cursor: pointer; }
+        .button { background-color: #28a745; color: white; padding: 10px 15px; border-radius: 5px; text-decoration: none; }
+        .button:hover { background-color: #218838; }
+        .link-detalhes { margin-left: 1.5em; color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Painel de Trabalho - {{ hoje }}</h1>
+        <a href="{{ url_for('adicionar_paciente') }}" class="button">Cadastrar Novo Paciente</a>
+    </div>
+
+    {% for unidade, pacientes in painel.items() %}
+    <div class="unidade-bloco">
+        <h2>{{ unidade }} ({{ pacientes|length }} pacientes)</h2>
+        {% for p in pacientes %}
+        <div class="paciente-item">
+            <div class="paciente-info">
+                <strong>{{ p.nome }}</strong> (Leito: {{ p.leito }}) - <em>{{ p.diagnostico }}</em>
+            </div>
+            <div class="atendimento-controles">
+                <form action="{{ url_for('marcar_atendimento') }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="paciente_id" value="{{ p.id }}">
+                    <input type="hidden" name="data" value="{{ hoje }}">
+                    <input type="hidden" name="turno" value="manha">
+                    <label>
+                        <input type="checkbox" onchange="this.form.submit()" 
+                               {% if p.atendimentos_hoje.manha %}checked{% endif %}> Manhã
+                    </label>
+                </form>
+                <form action="{{ url_for('marcar_atendimento') }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="paciente_id" value="{{ p.id }}">
+                    <input type="hidden" name="data" value="{{ hoje }}">
+                    <input type="hidden" name="turno" value="tarde">
+                    <label>
+                        <input type="checkbox" onchange="this.form.submit()"
+                               {% if p.atendimentos_hoje.tarde %}checked{% endif %}> Tarde
+                    </label>
+                </form>
+                <a href="{{ url_for('detalhes_paciente', paciente_id=p.id) }}" class="link-detalhes">Ver / Evoluir</a>
+            </div>
+        </div>
+        {% else %}
+        <p>Nenhum paciente ativo nesta unidade.</p>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>Nenhum paciente ativo no sistema.</p>
+    {% endfor %}
+</body>
+</html>
