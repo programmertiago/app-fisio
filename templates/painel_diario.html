@@ -1,13 +1,16 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Trabalho Diário</title>
+{% extends 'base.html' %}
+
+{% block title %}Painel de Trabalho Diário{% endblock %}
+
+{% block content %}
+    <div class="header">
+        <h2>Painel de Trabalho - {{ hoje }}</h2>
+        <a href="{{ url_for('adicionar_paciente') }}" class="button">Cadastrar Novo Paciente</a>
+    </div>
+
     <style>
-        body { font-family: Arial, sans-serif; margin: 2em; background-color: #f4f4f9; }
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        h1, h2 { color: #333; }
+        /* Estilos específicos desta página */
+        h2 { margin: 0; }
         .unidade-bloco { background-color: white; padding: 1em 2em; margin-top: 1.5em; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .paciente-item { border-bottom: 1px solid #eee; padding: 1em 0; }
         .paciente-item:last-child { border-bottom: none; }
@@ -15,16 +18,8 @@
         .paciente-info em { color: #555; }
         .atendimento-controles { margin-top: 0.5em; }
         .atendimento-controles label { margin-right: 1em; cursor: pointer; }
-        .button { background-color: #28a745; color: white; padding: 10px 15px; border-radius: 5px; text-decoration: none; }
-        .button:hover { background-color: #218838; }
-        .link-detalhes { margin-left: 1.5em; color: #007bff; }
+        .link-detalhes { margin-left: 1.5em; }
     </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Painel de Trabalho - {{ hoje }}</h1>
-        <a href="{{ url_for('adicionar_paciente') }}" class="button">Cadastrar Novo Paciente</a>
-    </div>
 
     {% for unidade, pacientes in painel.items() %}
     <div class="unidade-bloco">
@@ -63,5 +58,4 @@
     {% else %}
     <p>Nenhum paciente ativo no sistema.</p>
     {% endfor %}
-</body>
-</html>
+{% endblock %}

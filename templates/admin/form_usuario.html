@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if usuario %}Editar Usuário{% else %}Criar Novo Usuário{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+    .form-container { max-width: 600px; margin: 1em auto; background-color: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .form-container h2 { margin-top: 0; }
+    label { display: block; margin-bottom: 0.5em; font-weight: bold; }
+    input, select { width: 100%; padding: 10px; margin-bottom: 1em; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+    input[readonly] { background-color: #e9ecef; }
+    .form-actions { display: flex; justify-content: flex-end; gap: 1em; margin-top: 1em;}
+    .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; color: white; text-decoration: none; font-size: 1em;}
+    .btn-primary { background-color: #007bff; }
+    .btn-secondary { background-color: #6c757d; }
+</style>
+
+<div class="form-container">
+    <h2>{% if usuario %}Editar Usuário{% else %}Criar Novo Usuário{% endif %}</h2>
+    
+    <form method="POST" action="{{ url_for('editar_usuario', usuario_id=usuario['id']) if usuario else url_for('criar_usuario') }}">
+        <div>
+            <label for="nome_completo">Nome Completo:</label>
+            <input type="text" id="nome_completo" name="nome_completo" value="{{ usuario['nome_completo'] if usuario else '' }}" required>
+        </div>
+        <div>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="{{ usuario['email'] if usuario else '' }}" {% if usuario %}readonly{% endif %} required>
+        </div>
+        
+        {% if not usuario %}
+        <div>
+            <label for="senha">Senha Provisória:</label>
+            <input type="password" id="senha" name="senha" required>
+        </div>
+        {% endif %}
+
+        <div>
+            <label for="funcao">Função:</label>
+            <select id="funcao" name="funcao" required>
+                <option value="fisioterapeuta" {% if usuario and usuario['funcao'] == 'fisioterapeuta' %}selected{% endif %}>Fisioterapeuta</option>
+                <option value="admin" {% if usuario and usuario['funcao'] == 'admin' %}selected{% endif %}>Administrador</option>
+            </select>
+        </div>
+        
+        <div class="form-actions">
+            <a href="{{ url_for('lista_usuarios') }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

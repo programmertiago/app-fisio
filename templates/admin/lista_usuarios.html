@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestão de Usuários{% endblock %}
+
+{% block content %}
+<style>
+    .table { width: 100%; border-collapse: collapse; margin-top: 1.5em; }
+    .table th, .table td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+    .table th { background-color: #007bff; color: white; }
+    .actions a { margin-right: 10px; }
+
+    /* --- REGRAS ADICIONADAS --- */
+    .btn {
+        padding: 10px 15px;
+        border-radius: 5px;
+        text-decoration: none;
+        color: white !important; /* Adicionado para garantir a cor do texto */
+        cursor: pointer;
+    }
+    .btn-primary {
+        background-color: #28a745;
+    }
+    .btn-primary:hover {
+        background-color: #218838;
+    }
+</style>
+
+<div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>Gestão de Usuários</h2>
+    <a href="{{ url_for('criar_usuario') }}" class="btn btn-primary" style="color: white; text-decoration: none;">+ Criar Novo Usuário</a>
+</div>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Nome Completo</th>
+            <th>Email</th>
+            <th>Função</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for usuario in usuarios %}
+        <tr>
+            <td>{{ usuario['nome_completo'] }}</td>
+            <td>{{ usuario['email'] }}</td>
+            <td>{{ usuario['funcao'] }}</td>
+            <td class="actions">
+                <a href="{{ url_for('editar_usuario', usuario_id=usuario['id']) }}">Editar</a>
+                <form action="{{ url_for('resetar_senha', usuario_id=usuario['id']) }}" method="POST" style="display: inline;">
+    <button type="submit" 
+            onclick="return confirm('Tem certeza que deseja gerar uma nova senha para este usuário? Esta ação não pode ser desfeita.');"
+            style="background:none; border:none; padding:0; color:#007bff; cursor:pointer; text-decoration: underline;">
+        Resetar Senha
+    </button>
+</form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4">Nenhum usuário encontrado.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

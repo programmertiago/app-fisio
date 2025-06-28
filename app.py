@@ -1,5 +1,7 @@
 # app.py
 import sqlite3
+import secrets
+import string
 from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import date, datetime
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -12,9 +14,25 @@ app.config['SECRET_KEY'] = 'uma-chave-secreta-muito-segura-trocar-depois'
 DB_NAME = 'hospital.db'
 
 # --- Configuração do Flask-Login ---
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login' # Redireciona para a rota 'login' se o usuário não estiver logado
+
+# --- Decorators Customizados ---
+from functools import wraps
+
+def admin_required(f):
+    """
+    Decorator que garante que o usuário logado é um administrador.
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.funcao != 'admin':
+            flash('Acesso negado. Você precisa ser um administrador para ver esta página.', 'error')
+            return redirect(url_for('painel_diario'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # --- Modelo de Usuário ---
 class Usuario(UserMixin):
@@ -187,6 +205,126 @@ def inativar_paciente(paciente_id):
     conn.commit()
     conn.close()
     return redirect(url_for('painel_diario'))
+
+# --- ROTAS DA ÁREA DO ADMINISTRADOR ---
+
+@app.route('/admin/usuarios')
+@login_required
+@admin_required
+def lista_usuarios():
+    conn = get_db_connection()
+    usuarios = conn.execute('SELECT id, nome_completo, email, funcao FROM usuarios ORDER BY nome_completo').fetchall()
+    conn.close()
+    return render_template('admin/lista_usuarios.html', usuarios=usuarios)
+
+@app.route('/admin/usuarios/novo', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def criar_usuario():
+    if request.method == 'POST':
+        # Coleta os dados do formulário
+        nome = request.form['nome_completo']
+        email = request.form['email']
+        senha = request.form['senha']
+        funcao = request.form['funcao']
+
+        # Conecta ao banco e verifica se o email já existe para evitar duplicados
+        conn = get_db_connection()
+        usuario_existente = conn.execute('SELECT id FROM usuarios WHERE email = ?', (email,)).fetchone()
+
+        if usuario_existente:
+            # Se o email já existe, avisa o admin e redireciona de volta
+            flash('Este email já está cadastrado no sistema.', 'error')
+            conn.close()
+            return redirect(url_for('criar_usuario'))
+
+        # Se o email for novo, criptografa a senha e insere no banco
+        senha_hashed = generate_password_hash(senha)
+        conn.execute(
+            'INSERT INTO usuarios (nome_completo, email, senha_hash, funcao) VALUES (?, ?, ?, ?)',
+            (nome, email, senha_hashed, funcao)
+        )
+        conn.commit()
+        conn.close()
+
+        # Avisa que deu tudo certo e redireciona para a lista de usuários
+        flash('Usuário criado com sucesso!', 'success')
+        return redirect(url_for('lista_usuarios'))
+
+    # Se o método for GET (primeiro acesso à página), apenas mostra o formulário
+    return render_template('admin/form_usuario.html')
+
+# Adicione este bloco logo após a função criar_usuario()
+
+@app.route('/admin/usuarios/editar/<int:usuario_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def editar_usuario(usuario_id):
+    conn = get_db_connection()
+    # Primeiro, busca o usuário que será editado para garantir que ele existe
+    usuario = conn.execute('SELECT * FROM usuarios WHERE id = ?', (usuario_id,)).fetchone()
+
+    if usuario is None:
+        flash('Usuário não encontrado.', 'error')
+        conn.close()
+        return redirect(url_for('lista_usuarios'))
+
+    if request.method == 'POST':
+        # Coleta os dados do formulário
+        nome = request.form['nome_completo']
+        email = request.form['email']
+        funcao = request.form['funcao']
+
+        # Verifica se o novo email já pertence a OUTRO usuário
+        usuario_existente = conn.execute('SELECT id FROM usuarios WHERE email = ? AND id != ?', (email, usuario_id)).fetchone()
+        if usuario_existente:
+            flash('Este email já está em uso por outro usuário.', 'error')
+            conn.close()
+            # Re-renderiza o formulário com os dados originais do usuário
+            return render_template('admin/form_usuario.html', usuario=usuario)
+        
+        # Atualiza os dados no banco
+        conn.execute(
+            'UPDATE usuarios SET nome_completo = ?, email = ?, funcao = ? WHERE id = ?',
+            (nome, email, funcao, usuario_id)
+        )
+        conn.commit()
+        conn.close()
+        
+        flash('Usuário atualizado com sucesso!', 'success')
+        return redirect(url_for('lista_usuarios'))
+
+    # Se a requisição for GET, apenas mostra o formulário já preenchido
+    conn.close()
+    return render_template('admin/form_usuario.html', usuario=usuario)
+
+@app.route('/admin/usuarios/resetar_senha/<int:usuario_id>', methods=['POST'])
+@login_required
+@admin_required
+def resetar_senha(usuario_id):
+    # Define os caracteres que podem ser usados na nova senha
+    alfabeto = string.ascii_letters + string.digits + '!@#$%^&*'
+    # Gera uma senha segura de 12 caracteres
+    nova_senha = ''.join(secrets.choice(alfabeto) for i in range(12))
+
+    # Criptografa a nova senha
+    senha_hashed = generate_password_hash(nova_senha)
+
+    conn = get_db_connection()
+    # Atualiza a senha do usuário no banco de dados
+    conn.execute('UPDATE usuarios SET senha_hash = ? WHERE id = ?', (senha_hashed, usuario_id))
+
+    # Pega o nome do usuário para a mensagem de feedback
+    usuario = conn.execute('SELECT nome_completo FROM usuarios WHERE id = ?', (usuario_id,)).fetchone()
+
+    conn.commit()
+    conn.close()
+
+    # Mostra a nova senha na tela UMA VEZ para o admin poder copiar
+    flash(f"A nova senha para '{usuario['nome_completo']}' é: {nova_senha}", 'success')
+    flash('Anote e envie ao usuário. Esta senha não será mostrada novamente.', 'warning')
+
+    return redirect(url_for('lista_usuarios'))
 
 # --- Execução do Aplicativo ---
 if __name__ == '__main__':
