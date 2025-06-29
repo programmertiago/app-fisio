@@ -1,1 +1,49 @@
-- Versão 2.0: Implementar funcionalidade de arrastar e soltar (drag-and-drop) no painel.
+Roadmap "Passa Plantão" - Próximas Versões
+
+Funcionalidades Principais (Grandes Novidades)
+
+Templates Estruturados para Evolução:
+
+- Criar formulários específicos para certas condições (ex: Ventilação Mecânica, Pós-Operatório Ortopédico, Neurológico).
+
+- O usuário selecionaria um template e campos específicos apareceriam (Modo, PEEP, FR, etc.), salvando os dados de forma estruturada (JSON).
+
+Classificação por Escala Funcional:
+
+- Adicionar um campo para uma escala funcional no cadastro do paciente (ex: MIF, Barthel, Perme Score).
+
+- Permitir que o painel principal seja ordenado ou filtrado por essa classificação, para priorizar pacientes com maior dependência.
+
+Painel Interativo (Arrastar e Soltar / Drag-and-Drop):
+
+- Permitir que os fisioterapeutas reordenem manualmente os pacientes dentro de uma unidade apenas arrastando-os.
+
+- Permitir a transferência de um paciente entre unidades (ex: UTI -> Enfermaria) arrastando o card do paciente de uma coluna para a outra, com um pop-up de confirmação.
+
+Módulo de Relatórios e Estatísticas:
+
+- Uma nova área para administradores que gera gráficos e dados sobre a produtividade e o perfil dos atendimentos (ex: número de atendimentos por dia, por fisioterapeuta, etc.).
+
+Log de Auditoria:
+
+- Um registro de todas as ações críticas (quem inativou um paciente, quem resetou uma senha, quem alterou um diagnóstico) para aumentar a segurança e a rastreabilidade.
+
+Anexar Arquivos aos Pacientes:
+
+- Funcionalidade para fazer upload de documentos (PDFs, imagens) na página de detalhes de cada paciente.
+
+Usabilidade e Interface (Melhorando o Uso Diário)
+
+- Design Responsivo: Adaptar todo o layout para funcionar perfeitamente em telas de tablets e celulares.
+
+- Busca Rápida e Filtros no Painel: Adicionar uma barra de busca para encontrar pacientes por nome e filtros para visualizar unidades específicas.
+
+- Página "Meu Perfil": Uma área onde cada usuário logado pode ver seus próprios dados e alterar seu nome ou outras informações pessoais.
+
+Melhorias Técnicas e de Qualidade (A Base do Futuro)
+
+- (Prioridade Alta) Migrações de Banco de Dados: Implementar uma ferramenta como Flask-Migrate para permitir alterações na estrutura do banco de dados (como adicionar novas colunas) sem perder todos os dados existentes.
+
+Consolidação do CSS: Mover todos os blocos <style> de cada página para um único arquivo static/style.css, tornando o projeto mais organizado e rápido.
+
+Testes Automatizados: Criar testes para verificar se as funcionalidades principais (login, cadastro, etc.) continuam funcionando corretamente após cada nova alteração no código.
