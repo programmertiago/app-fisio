@@ -4,17 +4,36 @@
 
 {% block content %}
 <style>
+    /* Estilos para esta página específica */
     .table { width: 100%; border-collapse: collapse; margin-top: 1.5em; }
     .table th, .table td { padding: 12px; border: 1px solid #ddd; text-align: left; }
     .table th { background-color: #007bff; color: white; }
-    .actions a { margin-right: 10px; }
+    .actions a { margin-right: 10px; text-decoration: none; }
+    .actions a:hover { text-decoration: underline; }
 
-    /* --- REGRAS ADICIONADAS --- */
+    /* --- ESTILOS PARA OS NOVOS BOTÕES --- */
+    .link-button, .link-button-danger {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        text-decoration: underline;
+        display: inline;
+        margin: 0 10px 0 0;
+        font-size: 1em; /* Garante o mesmo tamanho da fonte */
+        font-family: inherit; /* Garante a mesma fonte */
+    }
+    .link-button {
+        color: #007bff;
+    }
+    .link-button-danger {
+        color: #dc3545; /* Vermelho para ações de perigo */
+    }
     .btn {
         padding: 10px 15px;
         border-radius: 5px;
         text-decoration: none;
-        color: white !important; /* Adicionado para garantir a cor do texto */
+        color: white !important; 
         cursor: pointer;
     }
     .btn-primary {
@@ -27,7 +46,7 @@
 
 <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
     <h2>Gestão de Usuários</h2>
-    <a href="{{ url_for('criar_usuario') }}" class="btn btn-primary" style="color: white; text-decoration: none;">+ Criar Novo Usuário</a>
+    <a href="{{ url_for('criar_usuario') }}" class="btn btn-primary">+ Criar Novo Usuário</a>
 </div>
 
 <table class="table">
@@ -36,24 +55,35 @@
             <th>Nome Completo</th>
             <th>Email</th>
             <th>Função</th>
-            <th>Ações</th>
+            <th>Status</th> <th>Ações</th>
         </tr>
     </thead>
     <tbody>
         {% for usuario in usuarios %}
-        <tr>
+        <tr {% if usuario['status'] == 'Inativo' %}style="color: #6c757d; background-color: #f8f9fa;"{% endif %}>
             <td>{{ usuario['nome_completo'] }}</td>
             <td>{{ usuario['email'] }}</td>
             <td>{{ usuario['funcao'] }}</td>
-            <td class="actions">
+            <td><strong>{{ usuario['status'] }}</strong></td> <td class="actions">
                 <a href="{{ url_for('editar_usuario', usuario_id=usuario['id']) }}">Editar</a>
-                <form action="{{ url_for('resetar_senha', usuario_id=usuario['id']) }}" method="POST" style="display: inline;">
-    <button type="submit" 
-            onclick="return confirm('Tem certeza que deseja gerar uma nova senha para este usuário? Esta ação não pode ser desfeita.');"
-            style="background:none; border:none; padding:0; color:#007bff; cursor:pointer; text-decoration: underline;">
-        Resetar Senha
-    </button>
-</form>
+                
+                <a href="{{ url_for('resetar_senha', usuario_id=usuario['id']) }}">Resetar Senha</a>
+
+                {% if usuario['status'] == 'Ativo' %}
+                    {% if current_user.id != usuario['id'] %}
+                    <form action="{{ url_for('inativar_usuario', usuario_id=usuario['id']) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="link-button-danger" onclick="return confirm('Tem certeza que deseja INATIVAR este usuário? Ele não poderá mais fazer login.')">
+                            Inativar
+                        </button>
+                    </form>
+                    {% endif %}
+                {% else %}
+                    <form action="{{ url_for('reativar_usuario', usuario_id=usuario['id']) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="link-button" style="color: #28a745;">
+                            Reativar
+                        </button>
+                    </form>
+                {% endif %}
             </td>
         </tr>
         {% else %}

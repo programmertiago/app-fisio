@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}Resetar Senha{% endblock %}
+
+{% block content %}
+<div class="form-container" style="max-width: 600px; margin: 1em auto;">
+    <h2>Resetar Senha para: {{ usuario['nome_completo'] }}</h2>
+    <p>A senha definida aqui será temporária. O usuário será forçado a trocá-la no próximo login.</p>
+    <form method="POST">
+        <div>
+            <label for="nova_senha">Digite a Nova Senha Provisória:</label>
+            <input type="text" id="nova_senha" name="nova_senha" required>
+        </div>
+        <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 1em; margin-top: 1em;">
+            <a href="{{ url_for('lista_usuarios') }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Definir Nova Senha</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

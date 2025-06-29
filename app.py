@@ -42,6 +42,24 @@ class Usuario(UserMixin):
         self.email = email
         self.funcao = funcao
 
+@app.before_request
+def check_force_password_change():
+    # A verificação só se aplica se o usuário estiver logado e tentando acessar uma página "normal"
+    # Precisamos excluir as rotas de 'logout' e a própria 'alterar_senha' para evitar um loop infinito.
+    # 'static' é para os arquivos CSS/JS internos do Flask.
+    if current_user.is_authenticated and \
+       request.endpoint not in ['logout', 'alterar_senha', 'static']:
+        
+        # Conecta ao banco para verificar o status da "bandeira" do usuário atual
+        conn = get_db_connection()
+        user_data = conn.execute('SELECT precisa_trocar_senha FROM usuarios WHERE id = ?', (current_user.id,)).fetchone()
+        conn.close()
+
+        # Se a bandeira estiver levantada (valor=1), força o redirecionamento
+        if user_data and user_data['precisa_trocar_senha'] == 1:
+            flash('Por segurança, você precisa definir uma nova senha antes de continuar.', 'warning')
+            return redirect(url_for('alterar_senha'))
+
 @login_manager.user_loader
 def load_user(user_id):
     """Carrega o usuário a partir do ID da sessão."""
@@ -85,6 +103,47 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+# Adicione esta rota depois da função logout()
+
+@app.route('/alterar-senha', methods=['GET', 'POST'])
+@login_required
+def alterar_senha():
+    if request.method == 'POST':
+        senha_atual = request.form['senha_atual']
+        nova_senha = request.form['nova_senha']
+        confirmacao = request.form['confirmacao_senha']
+
+        # Busca o hash da senha atual do usuário logado no banco para verificação
+        conn = get_db_connection()
+        user_db_data = conn.execute('SELECT senha_hash FROM usuarios WHERE id = ?', (current_user.id,)).fetchone()
+        
+        # 1. Verifica se a senha atual fornecida está correta
+        if not check_password_hash(user_db_data['senha_hash'], senha_atual):
+            flash('Sua senha atual está incorreta. Tente novamente.', 'error')
+            conn.close()
+            return redirect(url_for('alterar_senha'))
+        
+        # 2. Verifica se a nova senha e a confirmação são iguais
+        if nova_senha != confirmacao:
+            flash('A nova senha e a confirmação não correspondem.', 'error')
+            conn.close()
+            return redirect(url_for('alterar_senha'))
+
+        # 3. Se tudo estiver certo, atualiza a senha e a "bandeira" para 0
+        senha_hashed = generate_password_hash(nova_senha)
+        conn.execute(
+            'UPDATE usuarios SET senha_hash = ?, precisa_trocar_senha = 0 WHERE id = ?',
+            (senha_hashed, current_user.id)
+        )
+        conn.commit()
+        conn.close()
+
+        flash('Sua senha foi alterada com sucesso!', 'success')
+        return redirect(url_for('painel_diario'))
+    
+    # Se for GET, apenas mostra o formulário
+    return render_template('alterar_senha.html')
+
 # --- ROTAS PROTEGIDAS DO APLICATIVO ---
 
 @app.route('/')
@@ -93,7 +152,9 @@ def painel_diario():
     # ... (o resto da função continua exatamente igual)
     hoje_str = date.today().isoformat()
     conn = get_db_connection()
-    pacientes_ativos_raw = conn.execute("SELECT * FROM pacientes WHERE status = 'Ativo' ORDER BY unidade, nome").fetchall()
+    pacientes_ativos_raw = conn.execute(
+        "SELECT * FROM pacientes WHERE status = 'Ativo' ORDER BY unidade, leito"
+    ).fetchall()
     atendimentos_hoje_raw = conn.execute("SELECT * FROM atendimentos WHERE data = ?", (hoje_str,)).fetchall()
     atendimentos_hoje = { at['paciente_id']: {'manha': at['turno_manha'], 'tarde': at['turno_tarde']} for at in atendimentos_hoje_raw }
     conn.close()
@@ -153,7 +214,7 @@ def adicionar_evolucao(paciente_id):
 @app.route('/adicionar_paciente')
 @login_required
 def adicionar_paciente():
-    return render_template('adicionar_paciente.html')
+    return render_template('form_paciente.html')
 
 @app.route('/salvar_paciente', methods=['POST'])
 @login_required
@@ -166,6 +227,42 @@ def salvar_paciente():
     conn.commit()
     conn.close()
     return redirect(url_for('painel_diario'))
+
+@app.route('/paciente/editar/<int:paciente_id>', methods=['GET', 'POST'])
+@login_required
+def editar_paciente(paciente_id):
+    conn = get_db_connection()
+    # Busca os dados atuais do paciente para garantir que ele existe e para pré-preencher o form
+    paciente = conn.execute('SELECT * FROM pacientes WHERE id = ?', (paciente_id,)).fetchone()
+
+    if paciente is None:
+        flash('Paciente não encontrado.', 'error')
+        conn.close()
+        return redirect(url_for('painel_diario'))
+
+    if request.method == 'POST':
+        # Se o formulário foi enviado, coleta os novos dados
+        nome = request.form['nome']
+        idade = request.form['idade']
+        leito = request.form['leito']
+        unidade = request.form['unidade']
+        diagnostico = request.form['diagnostico']
+
+        # Executa o comando UPDATE para salvar as alterações no banco
+        conn.execute(
+            'UPDATE pacientes SET nome = ?, idade = ?, leito = ?, unidade = ?, diagnostico = ? WHERE id = ?',
+            (nome, idade, leito, unidade, diagnostico, paciente_id)
+        )
+        conn.commit()
+        conn.close()
+        
+        flash('Dados do paciente atualizados com sucesso!', 'success')
+        return redirect(url_for('detalhes_paciente', paciente_id=paciente_id))
+
+    # Se a requisição for GET, apenas mostra o formulário pré-preenchido
+    conn.close()
+    # Usaremos um futuro 'form_paciente.html' tanto para criar quanto para editar
+    return render_template('form_paciente.html', paciente=paciente)
 
 @app.route('/marcar_atendimento', methods=['POST'])
 @login_required
@@ -213,7 +310,7 @@ def inativar_paciente(paciente_id):
 @admin_required
 def lista_usuarios():
     conn = get_db_connection()
-    usuarios = conn.execute('SELECT id, nome_completo, email, funcao FROM usuarios ORDER BY nome_completo').fetchall()
+    usuarios = conn.execute('SELECT id, nome_completo, email, funcao, status FROM usuarios ORDER BY nome_completo').fetchall()
     conn.close()
     return render_template('admin/lista_usuarios.html', usuarios=usuarios)
 
@@ -298,33 +395,70 @@ def editar_usuario(usuario_id):
     conn.close()
     return render_template('admin/form_usuario.html', usuario=usuario)
 
-@app.route('/admin/usuarios/resetar_senha/<int:usuario_id>', methods=['POST'])
+@app.route('/admin/usuarios/inativar/<int:usuario_id>', methods=['POST'])
+@login_required
+@admin_required
+def inativar_usuario(usuario_id):
+    # Verificação de segurança para impedir que o admin se auto-inative
+    if usuario_id == current_user.id:
+        flash('Você não pode inativar a si mesmo.', 'error')
+        return redirect(url_for('lista_usuarios'))
+    
+    conn = get_db_connection()
+    conn.execute("UPDATE usuarios SET status = 'Inativo' WHERE id = ?", (usuario_id,))
+    conn.commit()
+    conn.close()
+    
+    flash('Usuário inativado com sucesso.', 'success')
+    return redirect(url_for('lista_usuarios'))
+
+# Adicione este bloco logo após a função inativar_usuario()
+
+@app.route('/admin/usuarios/reativar/<int:usuario_id>', methods=['POST'])
+@login_required
+@admin_required
+def reativar_usuario(usuario_id):
+    conn = get_db_connection()
+    conn.execute("UPDATE usuarios SET status = 'Ativo' WHERE id = ?", (usuario_id,))
+    conn.commit()
+    conn.close()
+    
+    flash('Usuário reativado com sucesso.', 'success')
+    return redirect(url_for('lista_usuarios'))
+
+# Substitua a função resetar_senha antiga por esta
+
+@app.route('/admin/usuarios/resetar_senha/<int:usuario_id>', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def resetar_senha(usuario_id):
-    # Define os caracteres que podem ser usados na nova senha
-    alfabeto = string.ascii_letters + string.digits + '!@#$%^&*'
-    # Gera uma senha segura de 12 caracteres
-    nova_senha = ''.join(secrets.choice(alfabeto) for i in range(12))
-
-    # Criptografa a nova senha
-    senha_hashed = generate_password_hash(nova_senha)
-
     conn = get_db_connection()
-    # Atualiza a senha do usuário no banco de dados
-    conn.execute('UPDATE usuarios SET senha_hash = ? WHERE id = ?', (senha_hashed, usuario_id))
+    usuario = conn.execute('SELECT id, nome_completo FROM usuarios WHERE id = ?', (usuario_id,)).fetchone()
 
-    # Pega o nome do usuário para a mensagem de feedback
-    usuario = conn.execute('SELECT nome_completo FROM usuarios WHERE id = ?', (usuario_id,)).fetchone()
+    if usuario is None:
+        flash('Usuário não encontrado.', 'error')
+        conn.close()
+        return redirect(url_for('lista_usuarios'))
 
-    conn.commit()
+    if request.method == 'POST':
+        nova_senha = request.form['nova_senha']
+        if not nova_senha:
+            flash('A senha provisória não pode estar em branco.', 'error')
+            return render_template('admin/reset_senha_form.html', usuario=usuario)
+
+        senha_hashed = generate_password_hash(nova_senha)
+
+        # ATUALIZA a senha e LEVANTA A BANDEIRA para forçar a troca no próximo login
+        conn.execute('UPDATE usuarios SET senha_hash = ?, precisa_trocar_senha = 1 WHERE id = ?', (senha_hashed, usuario_id))
+        conn.commit()
+
+        flash(f"Senha para '{usuario['nome_completo']}' foi resetada com sucesso!", 'success')
+        conn.close()
+        return redirect(url_for('lista_usuarios'))
+
+    # Para requisições GET, apenas mostra o formulário
     conn.close()
-
-    # Mostra a nova senha na tela UMA VEZ para o admin poder copiar
-    flash(f"A nova senha para '{usuario['nome_completo']}' é: {nova_senha}", 'success')
-    flash('Anote e envie ao usuário. Esta senha não será mostrada novamente.', 'warning')
-
-    return redirect(url_for('lista_usuarios'))
+    return render_template('admin/reset_senha_form.html', usuario=usuario)
 
 # --- Execução do Aplicativo ---
 if __name__ == '__main__':

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Fisio Handoff{% endblock %}</title>
+    <title>{% block title %}Passa Plantão{% endblock %}</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f4f9; }
         .container { max-width: 1200px; margin: 0 auto; padding: 2em; }
@@ -17,13 +17,15 @@
 </head>
 <body>
     <header class="header">
-        <h1><a href="{{ url_for('painel_diario') }}">Fisio Handoff</a></h1>
-        <nav class="header-nav">
+        <h1><a href="{{ url_for('painel_diario') }}">Passa Plantão</a></h1>
+   <nav class="header-nav">
     {% if current_user.is_authenticated %}
         <span>Olá, {{ current_user.nome_completo }}</span>
         
+        <a href="{{ url_for('alterar_senha') }}">Alterar Senha</a>
+
         {% if current_user.funcao == 'admin' %}
-            {% if request.endpoint == 'lista_usuarios' %}
+            {% if request.endpoint == 'lista_usuarios' or request.endpoint.startswith('admin.') %}
                 <a href="{{ url_for('painel_diario') }}">Painel de Trabalho</a>
             {% else %}
                 <a href="{{ url_for('lista_usuarios') }}">Gerenciar Usuários</a>

@@ -2,26 +2,17 @@
 import sqlite3
 from werkzeug.security import generate_password_hash
 
-# Define o nome do arquivo do banco de dados
 DB_NAME = 'hospital.db'
-
-# Conecta ao banco de dados (o arquivo será criado se não existir)
 conn = sqlite3.connect(DB_NAME)
-
-# Cria um "cursor", que é o objeto que executa os comandos SQL
 cursor = conn.cursor()
 
-# --- Comandos para apagar as tabelas se elas já existirem ---
-# Isso garante que estamos sempre começando com uma estrutura limpa
+# Apaga as tabelas antigas para garantir uma recriação limpa
 cursor.execute('DROP TABLE IF EXISTS atendimentos')
 cursor.execute('DROP TABLE IF EXISTS evolucoes')
 cursor.execute('DROP TABLE IF EXISTS usuarios')
 cursor.execute('DROP TABLE IF EXISTS pacientes')
 
-
-# --- Comandos SQL para criar as novas tabelas ---
-
-# Cria a tabela 'pacientes' (sem alterações)
+# Cria a tabela 'pacientes'
 cursor.execute('''
     CREATE TABLE pacientes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,18 +26,20 @@ cursor.execute('''
     )
 ''')
 
-# Cria a tabela 'usuarios' (NOVA!)
+# Cria a tabela 'usuarios' com a nova coluna 'precisa_trocar_senha'
 cursor.execute('''
     CREATE TABLE usuarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nome_completo TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         senha_hash TEXT NOT NULL,
-        funcao TEXT NOT NULL DEFAULT 'fisioterapeuta'
+        funcao TEXT NOT NULL DEFAULT 'fisioterapeuta',
+        status TEXT NOT NULL DEFAULT 'Ativo',
+        precisa_trocar_senha INTEGER NOT NULL DEFAULT 0
     )
 ''')
 
-# Cria a tabela 'evolucoes' (sem alterações)
+# Cria as outras tabelas... (código inalterado)
 cursor.execute('''
     CREATE TABLE evolucoes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,8 +50,6 @@ cursor.execute('''
         FOREIGN KEY (paciente_id) REFERENCES pacientes (id)
     )
 ''')
-
-# Cria a tabela 'atendimentos' (sem alterações)
 cursor.execute('''
     CREATE TABLE atendimentos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,28 +62,12 @@ cursor.execute('''
     )
 ''')
 
-# --- Adiciona dados de exemplo ---
-
-# Adiciona pacientes de exemplo
-cursor.execute('''
-    INSERT INTO pacientes (nome, idade, leito, unidade, diagnostico) VALUES
-    ('José da Silva', 68, '201-A', '2ª Enfermaria', 'DPOC agudizado'),
-    ('Maria Oliveira', 75, 'UTI-05', 'UTI', 'Pós-operatório de cirurgia cardíaca')
-''')
-
-# Adiciona um usuário administrador de exemplo (NOVO!)
-# A senha 'admin123' é transformada em um hash seguro antes de ser guardada.
+# Adiciona dados de exemplo... (código inalterado)
+cursor.execute("INSERT INTO pacientes (nome, idade, leito, unidade, diagnostico) VALUES ('José da Silva', 68, '201-A', '2ª Enfermaria', 'DPOC agudizado')")
 senha_hashed = generate_password_hash('admin123')
-cursor.execute('''
-    INSERT INTO usuarios (nome_completo, email, senha_hash, funcao) VALUES
-    ('Admin do Sistema', 'admin@fisio.com', ?, 'admin')
-''', (senha_hashed,))
+cursor.execute("INSERT INTO usuarios (nome_completo, email, senha_hash, funcao) VALUES ('Admin do Sistema', 'admin@fisio.com', ?, 'admin')", (senha_hashed,))
 
-
-# Salva (commit) as alterações no banco de dados
 conn.commit()
-
-# Fecha a conexão
 conn.close()
 
-print(f"Banco de dados '{DB_NAME}' recriado com sucesso, com a tabela de usuários!")
+print(f"Banco de dados '{DB_NAME}' recriado com sucesso, com a coluna 'precisa_trocar_senha'!")
