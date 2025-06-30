@@ -1,0 +1,9 @@
+# Arquivos de Banco de Dados
+hospital.db
+
+# Pasta de cache do Python
+__pycache__/
+
+# Arquivos de ambiente virtual (se usarmos no futuro)
+.venv
+venv/
