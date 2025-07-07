@@ -6,6 +6,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import date, datetime
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from zoneinfo import ZoneInfo
 
 # --- Configuração Inicial do Aplicativo ---
 app = Flask(__name__)
@@ -184,7 +185,7 @@ def detalhes_paciente(paciente_id):
 @login_required # <-- Proteção!
 def adicionar_evolucao(paciente_id):
     conn = get_db_connection()
-    agora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    agora_str = datetime.now(ZoneInfo("America/Sao_Paulo")).strftime("%Y-%m-%d %H:%M:%S")
 
     # Usamos o nome do usuário logado!
     fisio_logado = current_user.nome_completo
