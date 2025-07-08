@@ -27,7 +27,7 @@
         {% for p in pacientes %}
         <div class="paciente-item">
             <div class="paciente-info">
-                <strong>{{ p.nome }}</strong> (Leito: {{ p.leito }}) - <em>{{ p.diagnostico }}</em>
+                <strong>{{ p.nome }}</strong> ({{ p.idade }} anos) - Leito: {{ p.leito }}
             </div>
             <div class="atendimento-controles">
                 <form action="{{ url_for('marcar_atendimento') }}" method="POST" style="display: inline;">

@@ -26,6 +26,7 @@
     <a href="{{ url_for('painel_diario') }}">&larr; Voltar ao Painel</a>
     <div class="paciente-info">
         <h1>{{ paciente.nome }} ({{ paciente.idade }} anos)</h1>
+        <p><strong>Data de Nascimento:</strong> {{ paciente.data_nascimento or 'Não informado' }}</p>
         <p><strong>Leito:</strong> {{ paciente.leito }} | <strong>Unidade:</strong> {{ paciente.unidade }} | <strong>Status:</strong> {{ paciente.status }}</p>
         <p><strong>Diagnóstico:</strong> {{ paciente.diagnostico }}</p>
     <div style="margin-top: 1em;">
@@ -72,7 +73,7 @@
     <hr>
     <h2>Histórico de Evoluções</h2>
     {% for evolucao in evolucoes %}
-        <div class="evolucao">{{ evolucao['data'] }} por <strong>{{ evolucao['fisio'] }}</strong>: {{ evolucao['texto'] }}</div>
+        <div class="evolucao">{{ evolucao.data.strftime('%d/%m/%Y %H:%M:%S') }} por <strong>{{ evolucao.fisio }}</strong>: {{ evolucao.texto }}</div>
     {% else %}
         <p>Nenhuma evolução registrada para este paciente.</p>
     {% endfor %}
