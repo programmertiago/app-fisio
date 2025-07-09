@@ -151,6 +151,25 @@ def painel_diario():
         painel[unidade].append(p)
     return render_template('painel_diario.html', painel=painel, hoje=hoje_str)
 
+@app.route('/arquivo')
+@login_required
+def arquivo():
+    # Pega o termo de busca da URL (ex: /arquivo?busca=joao)
+    termo_busca = request.args.get('busca', '')
+    pacientes_inativos = []
+
+    # Se houver um termo de busca, procura no banco
+    if termo_busca:
+        # O símbolo '%' é um coringa que significa "qualquer sequência de caracteres"
+        termo_like = f"%{termo_busca}%"
+        pacientes_inativos = Paciente.query.filter(
+            Paciente.status == 'Inativo',
+            Paciente.nome.like(termo_like)
+        ).all()
+
+    # Renderiza a página, passando a lista de pacientes (que pode estar vazia) e o termo de busca
+    return render_template('arquivo.html', pacientes=pacientes_inativos, busca=termo_busca)
+
 @app.route('/paciente/<int:paciente_id>')
 @login_required
 def detalhes_paciente(paciente_id):

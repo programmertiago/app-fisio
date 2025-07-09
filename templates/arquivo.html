@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Arquivo de Pacientes{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos que já conhecemos para tabelas e formulários */
+    .form-inline { display: flex; gap: 10px; margin-bottom: 2em; }
+    .form-inline input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+    .table { width: 100%; border-collapse: collapse; }
+    .table th, .table td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+    .table th { background-color: #6c757d; color: white; }
+</style>
+
+<div class="header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em;">
+    <h2>Arquivo de Pacientes Inativos</h2>
+</div>
+
+<form method="GET" action="{{ url_for('arquivo') }}" class="form-inline">
+    <input type="text" name="busca" placeholder="Digite o nome do paciente para buscar..." value="{{ busca or '' }}">
+    <button type="submit" class="btn btn-primary">Buscar</button>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Nome Completo</th>
+            <th>Data de Nascimento</th>
+            <th>Motivo da Inativação</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for paciente in pacientes %}
+        <tr>
+            <td>{{ paciente.nome }}</td>
+            <td>{{ paciente.data_nascimento or 'N/A' }}</td>
+            <td>{{ paciente.motivo_inativacao }}</td>
+            <td>
+                <a href="{{ url_for('detalhes_paciente', paciente_id=paciente.id) }}">Ver Histórico</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4">Nenhum paciente encontrado. Realize uma busca para ver os resultados.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
