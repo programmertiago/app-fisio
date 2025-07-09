@@ -59,7 +59,7 @@ class Paciente(db.Model):
     diagnostico = db.Column(db.Text)
     status = db.Column(db.String(20), nullable=False, default='Ativo')
     motivo_inativacao = db.Column(db.String(100))
-    data_nascimento = db.Column(db.String(10), nullable=True) 
+    data_nascimento = db.Column(db.String(10), nullable=False) 
     evolucoes = db.relationship('Evolucao', backref='paciente', lazy='dynamic', cascade="all, delete-orphan")
     atendimentos = db.relationship('Atendimento', backref='paciente', lazy='dynamic', cascade="all, delete-orphan")
 
@@ -213,6 +213,10 @@ def salvar_paciente():
     # --- MUDANÇA AQUI: Calculamos a idade automaticamente ---
     idade_calculada = calcular_idade(data_nascimento)
 
+    if not data_nascimento:
+        flash('A data de nascimento é um campo obrigatório.', 'error')
+        return redirect(url_for('adicionar_paciente'))
+
     # VERIFICAÇÃO 1: O leito já está ocupado por um paciente ATIVO?
     leito_ocupado = Paciente.query.filter_by(unidade=unidade, leito=leito, status='Ativo').first()
     if leito_ocupado:
@@ -261,6 +265,10 @@ def editar_paciente(paciente_id):
         return redirect(url_for('painel_diario'))
 
     if request.method == 'POST':
+        data_nascimento = request.form['data_nascimento']
+    if not data_nascimento:
+        flash('A data de nascimento é um campo obrigatório.', 'error')
+        return redirect(url_for('editar_paciente', paciente_id=paciente_id))
         unidade_nova = request.form['unidade']
         leito_novo = request.form['leito']
         leito_ocupado = Paciente.query.filter(
