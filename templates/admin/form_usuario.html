@@ -18,7 +18,7 @@
 <div class="form-container">
     <h2>{% if usuario %}Editar Usuário{% else %}Criar Novo Usuário{% endif %}</h2>
     
-    <form method="POST" action="{{ url_for('editar_usuario', usuario_id=usuario['id']) if usuario else url_for('criar_usuario') }}">
+    <form method="POST" action="{{ url_for('editar_usuario_admin', usuario_id=usuario['id']) if usuario else url_for('criar_usuario') }}">
         <div>
             <label for="nome_completo">Nome Completo:</label>
             <input type="text" id="nome_completo" name="nome_completo" value="{{ usuario['nome_completo'] if usuario else '' }}" required>

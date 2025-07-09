@@ -4,49 +4,19 @@
 
 {% block content %}
 <style>
-    /* Estilos para esta página específica */
     .table { width: 100%; border-collapse: collapse; margin-top: 1.5em; }
     .table th, .table td { padding: 12px; border: 1px solid #ddd; text-align: left; }
     .table th { background-color: #007bff; color: white; }
-    .actions a { margin-right: 10px; text-decoration: none; }
-    .actions a:hover { text-decoration: underline; }
-
-    /* --- ESTILOS PARA OS NOVOS BOTÕES --- */
-    .link-button, .link-button-danger {
-        background: none;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-        text-decoration: underline;
-        display: inline;
-        margin: 0 10px 0 0;
-        font-size: 1em; /* Garante o mesmo tamanho da fonte */
-        font-family: inherit; /* Garante a mesma fonte */
-    }
-    .link-button {
-        color: #007bff;
-    }
-    .link-button-danger {
-        color: #dc3545; /* Vermelho para ações de perigo */
-    }
-    .btn {
-        padding: 10px 15px;
-        border-radius: 5px;
-        text-decoration: none;
-        color: white !important; 
-        cursor: pointer;
-    }
-    .btn-primary {
-        background-color: #28a745;
-    }
-    .btn-primary:hover {
-        background-color: #218838;
-    }
+    .actions a, .actions .link-button, .actions .link-button-danger { margin-right: 10px; }
+    .link-button, .link-button-danger { background:none; border:none; padding:0; cursor:pointer; text-decoration: underline; font-size: 1em; font-family: inherit; }
+    .link-button { color: #007bff; }
+    .link-button-danger { color: #dc3545; }
+    .btn-primary { background-color: #28a745; color: white; padding: 10px 15px; border-radius: 5px; text-decoration: none; }
 </style>
 
 <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
     <h2>Gestão de Usuários</h2>
-    <a href="{{ url_for('criar_usuario') }}" class="btn btn-primary">+ Criar Novo Usuário</a>
+    <a href="{{ url_for('criar_usuario') }}" class="btn-primary" style="color: white;">+ Criar Novo Usuário</a>
 </div>
 
 <table class="table">
@@ -55,40 +25,36 @@
             <th>Nome Completo</th>
             <th>Email</th>
             <th>Função</th>
-            <th>Status</th> <th>Ações</th>
+            <th>Status</th>
+            <th>Ações</th>
         </tr>
     </thead>
     <tbody>
         {% for usuario in usuarios %}
-        <tr {% if usuario['status'] == 'Inativo' %}style="color: #6c757d; background-color: #f8f9fa;"{% endif %}>
-            <td>{{ usuario['nome_completo'] }}</td>
-            <td>{{ usuario['email'] }}</td>
-            <td>{{ usuario['funcao'] }}</td>
-            <td><strong>{{ usuario['status'] }}</strong></td> <td class="actions">
-                <a href="{{ url_for('editar_usuario', usuario_id=usuario['id']) }}">Editar</a>
+        <tr {% if usuario.status == 'Inativo' %}style="color: #6c757d; background-color: #f8f9fa;"{% endif %}>
+            <td>{{ usuario.nome_completo }}</td>
+            <td>{{ usuario.email }}</td>
+            <td>{{ usuario.funcao }}</td>
+            <td><strong>{{ usuario.status }}</strong></td>
+            <td class="actions">
+                <a href="{{ url_for('editar_usuario_admin', usuario_id=usuario.id) }}">Editar</a>
                 
-                <a href="{{ url_for('resetar_senha', usuario_id=usuario['id']) }}">Resetar Senha</a>
-
-                {% if usuario['status'] == 'Ativo' %}
-                    {% if current_user.id != usuario['id'] %}
-                    <form action="{{ url_for('inativar_usuario', usuario_id=usuario['id']) }}" method="POST" style="display: inline;">
-                        <button type="submit" class="link-button-danger" onclick="return confirm('Tem certeza que deseja INATIVAR este usuário? Ele não poderá mais fazer login.')">
-                            Inativar
-                        </button>
+                <a href="{{ url_for('resetar_senha_admin', usuario_id=usuario.id) }}">Resetar Senha</a>
+                
+                {% if usuario.status == 'Ativo' and current_user.id != usuario.id %}
+                    <form action="{{ url_for('inativar_usuario_admin', usuario_id=usuario.id) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="link-button-danger" onclick="return confirm('Tem certeza que deseja INATIVAR este usuário?')">Inativar</button>
                     </form>
-                    {% endif %}
-                {% else %}
-                    <form action="{{ url_for('reativar_usuario', usuario_id=usuario['id']) }}" method="POST" style="display: inline;">
-                        <button type="submit" class="link-button" style="color: #28a745;">
-                            Reativar
-                        </button>
+                {% elif usuario.status == 'Inativo' %}
+                     <form action="{{ url_for('reativar_usuario_admin', usuario_id=usuario.id) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="link-button" style="color: #28a745;">Reativar</button>
                     </form>
                 {% endif %}
             </td>
         </tr>
         {% else %}
         <tr>
-            <td colspan="4">Nenhum usuário encontrado.</td>
+            <td colspan="5">Nenhum usuário encontrado.</td>
         </tr>
         {% endfor %}
     </tbody>
