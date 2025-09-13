@@ -8,19 +8,6 @@
         <a href="{{ url_for('adicionar_paciente') }}" class="button">Cadastrar Novo Paciente</a>
     </div>
 
-    <style>
-        /* Estilos específicos desta página */
-        h2 { margin: 0; }
-        .unidade-bloco { background-color: white; padding: 1em 2em; margin-top: 1.5em; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .paciente-item { border-bottom: 1px solid #eee; padding: 1em 0; }
-        .paciente-item:last-child { border-bottom: none; }
-        .paciente-info strong { font-size: 1.2em; }
-        .paciente-info em { color: #555; }
-        .atendimento-controles { margin-top: 0.5em; }
-        .atendimento-controles label { margin-right: 1em; cursor: pointer; }
-        .link-detalhes { margin-left: 1.5em; }
-    </style>
-
     {% for unidade, pacientes in painel.items() %}
     <div class="unidade-bloco">
         <h2>{{ unidade }} ({{ pacientes|length }} pacientes)</h2>

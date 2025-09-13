@@ -15,7 +15,7 @@
 </style>
 
 <div class="form-container">
-    <h2>{% if paciente %}Editar Paciente{% else %}Cadastrar Novo Paciente{% endif %}</h2>
+    <h2>{% if paciente %}Editar Paciente{% else %}Cadastrar Novo Paciente{% endif %}</h2><br>
     
     <form action="{{ url_for('editar_paciente', paciente_id=paciente.id) if paciente else url_for('salvar_paciente') }}" method="POST">
         <div>
@@ -29,11 +29,6 @@
         </div>
         
         <div>
-            <label for="leito">Leito:</label>
-            <input type="text" id="leito" name="leito" value="{{ paciente.leito if paciente else '' }}" required>
-        </div>
-        
-        <div>
             <label for="unidade">Unidade de Internação:</label>
             <select id="unidade" name="unidade" required>
                 <option value="1ª Enfermaria" {% if paciente and paciente.unidade == '1ª Enfermaria' %}selected{% endif %}>1ª Enfermaria</option>
@@ -41,6 +36,11 @@
                 <option value="3ª Enfermaria" {% if paciente and paciente.unidade == '3ª Enfermaria' %}selected{% endif %}>3ª Enfermaria</option>
                 <option value="UTI" {% if paciente and paciente.unidade == 'UTI' %}selected{% endif %}>UTI</option>
             </select>
+        </div>
+
+        <div>
+            <label for="leito">Leito:</label>
+            <input type="text" id="leito" name="leito" value="{{ paciente.leito if paciente else '' }}" required>
         </div>
         
         <div>
@@ -54,4 +54,31 @@
         </div>
     </form>
 </div>
+
+<script>
+    // Encontra o nosso campo de input da data de nascimento pelo seu ID
+    const dataNascimentoInput = document.getElementById('data_nascimento');
+
+    // Adiciona um "ouvinte" que dispara uma função toda vez que o usuário digita algo
+    dataNascimentoInput.addEventListener('input', function (e) {
+        // Pega o valor atual do campo e remove tudo que não for número
+        let value = e.target.value.replace(/\D/g, '');
+        
+        // Limita o tamanho para 8 dígitos (DDMMAAAA)
+        if (value.length > 8) {
+            value = value.slice(0, 8);
+        }
+
+        // Adiciona as barras na posição correta
+        if (value.length > 4) {
+            value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4);
+        } else if (value.length > 2) {
+            value = value.slice(0, 2) + '/' + value.slice(2);
+        }
+
+        // Coloca o valor formatado de volta no campo
+        e.target.value = value;
+    });
+</script>
+
 {% endblock %}
