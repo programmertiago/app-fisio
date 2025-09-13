@@ -4,6 +4,7 @@
 
 {% block content %}
 <style>
+    /* O teu CSS continua aqui, sem alterações */
     .form-container { max-width: 600px; margin: 1em auto; background-color: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     .form-container h2 { margin-top: 0; }
     label { display: block; margin-bottom: 0.5em; font-weight: bold; }
@@ -14,8 +15,8 @@
     .btn-secondary { background-color: #6c757d; }
 </style>
 
-<div class="form-container">
-    <h2>{% if paciente %}Editar Paciente{% else %}Cadastrar Novo Paciente{% endif %}</h2><br>
+<div class="form-container" data-paciente='{{ paciente|tojson|safe if paciente else 'null' }}'>
+    <h2>{% if paciente %}Editar Paciente{% else %}Cadastrar Novo Paciente{% endif %}</h2> <br>
     
     <form action="{{ url_for('editar_paciente', paciente_id=paciente.id) if paciente else url_for('salvar_paciente') }}" method="POST">
         <div>
@@ -25,12 +26,13 @@
 
         <div>
             <label for="data_nascimento">Data de Nascimento:</label>
-           <input type="text" id="data_nascimento" name="data_nascimento" value="{{ paciente.data_nascimento if paciente else '' }}" placeholder="DD/MM/AAAA" required>
+            <input type="text" id="data_nascimento" name="data_nascimento" value="{{ paciente.data_nascimento if paciente else '' }}" placeholder="DD/MM/AAAA" required>
         </div>
         
         <div>
             <label for="unidade">Unidade de Internação:</label>
             <select id="unidade" name="unidade" required>
+                <option value="" {% if not paciente %}selected{% endif %} disabled>Selecione uma unidade...</option>
                 <option value="1ª Enfermaria" {% if paciente and paciente.unidade == '1ª Enfermaria' %}selected{% endif %}>1ª Enfermaria</option>
                 <option value="2ª Enfermaria" {% if paciente and paciente.unidade == '2ª Enfermaria' %}selected{% endif %}>2ª Enfermaria</option>
                 <option value="3ª Enfermaria" {% if paciente and paciente.unidade == '3ª Enfermaria' %}selected{% endif %}>3ª Enfermaria</option>
@@ -40,7 +42,9 @@
 
         <div>
             <label for="leito">Leito:</label>
-            <input type="text" id="leito" name="leito" value="{{ paciente.leito if paciente else '' }}" required>
+            <div id="leito-container">
+                <input type="text" id="leito" name="leito" value="{{ paciente.leito if paciente else '' }}" required>
+            </div>
         </div>
         
         <div>
@@ -55,30 +59,6 @@
     </form>
 </div>
 
-<script>
-    // Encontra o nosso campo de input da data de nascimento pelo seu ID
-    const dataNascimentoInput = document.getElementById('data_nascimento');
-
-    // Adiciona um "ouvinte" que dispara uma função toda vez que o usuário digita algo
-    dataNascimentoInput.addEventListener('input', function (e) {
-        // Pega o valor atual do campo e remove tudo que não for número
-        let value = e.target.value.replace(/\D/g, '');
-        
-        // Limita o tamanho para 8 dígitos (DDMMAAAA)
-        if (value.length > 8) {
-            value = value.slice(0, 8);
-        }
-
-        // Adiciona as barras na posição correta
-        if (value.length > 4) {
-            value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4);
-        } else if (value.length > 2) {
-            value = value.slice(0, 2) + '/' + value.slice(2);
-        }
-
-        // Coloca o valor formatado de volta no campo
-        e.target.value = value;
-    });
-</script>
+<script src="{{ url_for('static', filename='js/form_paciente.js') }}"></script>
 
 {% endblock %}
