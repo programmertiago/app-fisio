@@ -1,81 +1,110 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detalhes do Paciente - {{ paciente.nome }}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 2em; background-color: #f4f4f9; }
-        h1, h2, h3 { color: #333; }
-        .paciente-info { background-color: #e9ecef; padding: 1em; border-radius: 8px; margin-bottom: 1em; }
-        .gestao-paciente { background-color: #fff3cd; padding: 1em; border-radius: 8px; margin-bottom: 1em; border: 1px solid #ffeeba; }
-        .gestao-paciente form { margin-bottom: 1em; }
-        .evolucao { border: 1px solid #ccc; padding: 1em; margin-bottom: 1em; background-color: #fff; border-radius: 5px; }
-        textarea, input, select { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; }
-        .btn-salvar { background-color: #28a745; }
-        .btn-mudar { background-color: #007bff; }
-        .btn-inativar { background-color: #dc3545; }
-.btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: white !important; text-decoration: none; font-size: 0.9em;}
-.btn-primary { background-color: #007bff; }
-.btn-primary:hover { background-color: #0056b3; }
-    </style>
-    
-</head>
-<body>
-    <a href="{{ url_for('painel_diario') }}">&larr; Voltar ao Painel</a>
-    <div class="paciente-info">
-        <h1>{{ paciente.nome }} ({{ paciente.idade }} anos)</h1>
-        <p><strong>Data de Nascimento:</strong> {{ paciente.data_nascimento or 'Não informado' }}</p>
-        <p><strong>Leito:</strong> {{ paciente.leito }} | <strong>Unidade:</strong> {{ paciente.unidade }} | <strong>Status:</strong> {{ paciente.status }}</p>
-        <p><strong>Diagnóstico:</strong> {{ paciente.diagnostico }}</p>
-    <div style="margin-top: 1em;">
-    <a href="{{ url_for('editar_paciente', paciente_id=paciente.id) }}" class="btn btn-primary">Editar Dados do Paciente</a>
-</div>
+{% extends "base.html" %}
+
+{% block title %}Detalhes de {{ paciente.nome }}{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{{ url_for('painel_diario') }}" class="btn btn-outline-secondary btn-sm">&larr; Voltar ao Painel</a>
     </div>
 
-    <div class="gestao-paciente">
-        <h3>Gestão do Paciente</h3>
-        <form action="{{ url_for('mudar_unidade', paciente_id=paciente.id) }}" method="POST" style="display: flex; align-items: center; gap: 10px;">
-            <select name="unidade" required>
-                <option value="1ª Enfermaria" {% if paciente.unidade == '1ª Enfermaria' %}selected{% endif %}>1ª Enfermaria</option>
-                <option value="2ª Enfermaria" {% if paciente.unidade == '2ª Enfermaria' %}selected{% endif %}>2ª Enfermaria</option>
-                <option value="3ª Enfermaria" {% if paciente.unidade == '3ª Enfermaria' %}selected{% endif %}>3ª Enfermaria</option>
-                <option value="UTI" {% if paciente.unidade == 'UTI' %}selected{% endif %}>UTI</option>
-            </select>
-            <button type="submit" class="btn-mudar">Mudar Unidade</button>
-        </form>
-        <form action="{{ url_for('inativar_paciente', paciente_id=paciente.id) }}" method="POST" style="display: flex; align-items: center; gap: 10px;">
-            <select name="motivo" required>
-                <option value="Alta">Dar Alta</option>
-                <option value="Óbito">Registrar Óbito</option>
-                <option value="Transferência Externa">Transferência Externa</option>
-            </select>
-            <button type="submit" class="btn-inativar">Inativar Paciente</button>
-        </form>
+    <div class="card patient-header mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1 class="patient-header__name">{{ paciente.nome }} ({{ paciente.idade }} anos)</h1>
+                    <div class="patient-header__details text-muted">
+                        <span><strong>Data de Nascimento:</strong> {{ paciente.data_nascimento }}</span> | 
+                        <span><strong>Leito:</strong> {{ paciente.leito }}</span> | 
+                        <span><strong>Unidade:</strong> {{ paciente.unidade }}</span> | 
+                        <span><strong>Status:</strong> {{ paciente.status }}</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('editar_paciente', paciente_id=paciente.id) }}" class="btn btn-secondary">Editar Dados</a>
+            </div>
+            <hr>
+            <p class="mb-0"><strong>Diagnóstico:</strong> {{ paciente.diagnostico }}</p>
+        </div>
     </div>
 
-    <hr>
-    <h2>Adicionar Nova Evolução/Conduta</h2>
-    <form action="{{ url_for('adicionar_evolucao', paciente_id=paciente.id) }}" method="POST">
-        
-        <label for="evolucao">Avaliação, Condutas e Plano Terapêutico:</label>
-        <textarea id="evolucao" name="evolucao" rows="6" required></textarea>
+    <div class="card mb-4">
+        <div class="card-header fw-bold">
+            Gestão do Paciente
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('mudar_unidade', paciente_id=paciente.id) }}" method="POST" class="row g-3 align-items-center mb-3 pb-3 border-bottom">
+                <div class="col-auto">
+                    <label for="unidade" class="col-form-label">Transferir para:</label>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="unidade" name="unidade" required>
+                        <option value="1ª Enfermaria">1ª Enfermaria</option>
+                        <option value="2ª Enfermaria">2ª Enfermaria</option>
+                        <option value="3ª Enfermaria">3ª Enfermaria</option>
+                        <option value="UTI">UTI</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Mudar Unidade</button>
+                </div>
+            </form>
+            <form action="{{ url_for('inativar_paciente', paciente_id=paciente.id) }}" method="POST" class="row g-3 align-items-center mt-3">
+                <div class="col-auto">
+                     <label for="motivo" class="col-form-label">Inativar por (Alta, óbito, etc):</label>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="motivo" id="motivo" placeholder="Ex: Alta hospitalar" required>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-danger">Inativar Paciente</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        <label for="turno_atendimento">Atendimento referente ao turno:</label>
-        <select name="turno_atendimento" id="turno_atendimento" required>
-            <option value="manha">Manhã</option>
-            <option value="tarde">Tarde</option>
-        </select>
-        
-        <button type="submit" class="btn-salvar">Salvar Evolução</button>
-    </form>
-    <hr>
-    <h2>Histórico de Evoluções</h2>
-    {% for evolucao in evolucoes %}
-        <div class="evolucao">{{ evolucao.data.strftime('%d/%m/%Y %H:%M:%S') }} por <strong>{{ evolucao.fisio }}</strong>: {{ evolucao.texto }}</div>
-    {% else %}
-        <p>Nenhuma evolução registrada para este paciente.</p>
-    {% endfor %}
-</body>
-</html>
+    <div class="card mb-4">
+        <div class="card-header fw-bold">
+            Adicionar Nova Evolução/Conduta
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('adicionar_evolucao', paciente_id=paciente.id) }}" method="POST">
+                <div class="mb-3">
+                    <label for="evolucao" class="form-label">Avaliação, Condutas e Plano Terapêutico:</label>
+                    <textarea class="form-control" id="evolucao" name="evolucao" rows="5" required></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="turno_atendimento" class="form-label">Atendimento referente ao turno:</label>
+                        <select class="form-select" id="turno_atendimento" name="turno_atendimento" required>
+                            <option value="manha">Manhã</option>
+                            <option value="tarde">Tarde</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success">Salvar Evolução</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header fw-bold">
+            Histórico de Evoluções
+        </div>
+        <div class="list-group list-group-flush">
+            {% for evolucao in evolucoes %}
+            <div class="list-group-item evolution-item">
+                <div class="evolution-item__meta text-muted">
+                    <span><strong>Data:</strong> {{ evolucao.data.strftime('%d/%m/%Y às %H:%M') }}</span> | 
+                    <span><strong>Fisio:</strong> {{ evolucao.fisio }}</span>
+                </div>
+                <div class="evolution-item__text mt-2">
+                    {{ evolucao.texto | nl2br }}
+                </div>
+            </div>
+            {% else %}
+            <div class="list-group-item">
+                <p class="text-muted mb-0">Nenhuma evolução registrada para este paciente.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

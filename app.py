@@ -1,10 +1,10 @@
-# app.py (versão 100% completa e revisada)
-
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import date, datetime
 from functools import wraps
 import pytz
+import re
+from markupsafe import Markup, escape
 
 # Extensões
 from flask_sqlalchemy import SQLAlchemy
@@ -12,8 +12,7 @@ from flask_migrate import Migrate
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 
-
-# --- Configuração Inicial do Aplicativo e Extensões ---
+# --- Configuração Inicial ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'uma-chave-secreta-muito-segura-trocar-depois'
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -26,8 +25,7 @@ migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-
-# --- Modelos de Banco de Dados (Classes SQLAlchemy) ---
+# --- Modelos de Banco de Dados ---
 class Usuario(UserMixin, db.Model):
     __tablename__ = 'usuarios'
     id = db.Column(db.Integer, primary_key=True)
@@ -52,6 +50,18 @@ class Paciente(db.Model):
     evolucoes = db.relationship('Evolucao', backref='paciente', lazy='dynamic', cascade="all, delete-orphan")
     atendimentos = db.relationship('Atendimento', backref='paciente', lazy='dynamic', cascade="all, delete-orphan")
 
+    def to_dict(self):
+        """Converte o objeto Paciente num dicionário."""
+        return {
+            'id': self.id,
+            'nome': self.nome,
+            'idade': self.idade,
+            'leito': self.leito,
+            'unidade': self.unidade,
+            'diagnostico': self.diagnostico,
+            'data_nascimento': self.data_nascimento
+        }
+
 class Evolucao(db.Model):
     __tablename__ = 'evolucoes'
     id = db.Column(db.Integer, primary_key=True)
@@ -69,8 +79,16 @@ class Atendimento(db.Model):
     paciente_id = db.Column(db.Integer, db.ForeignKey('pacientes.id'), nullable=False)
     __table_args__ = (db.UniqueConstraint('paciente_id', 'data', name='_paciente_data_uc'),)
 
+# --- Funções de Ajuda, Filtros e Hooks ---
+_paragraph_re = re.compile(r'(?:\r\n|\r|\n){2,}')
 
-# --- Funções de Ajuda, Login e Hooks ---
+@app.template_filter('nl2br')
+def nl2br_filter(value: str):
+    if value is None: return ""
+    escaped_value = escape(value)
+    result = u'\n\n'.join(u'<p>%s</p>' % p.replace('\n', '<br>\n') for p in _paragraph_re.split(escaped_value))
+    return Markup(result)
+
 def calcular_idade(data_nascimento_str):
     if not data_nascimento_str: return None
     try:
@@ -98,8 +116,7 @@ def check_force_password_change():
         if getattr(current_user, 'precisa_trocar_senha', False):
             flash('Por segurança, você precisa definir uma nova senha.', 'warning'); return redirect(url_for('alterar_senha'))
 
-
-# --- ROTAS ---
+# --- Rotas Principais ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -145,7 +162,7 @@ def painel_diario():
         atendimento_hoje = Atendimento.query.filter_by(paciente_id=p.id, data=date.today().isoformat()).first()
         p.atendimentos_hoje = {'manha': atendimento_hoje.turno_manha if atendimento_hoje else False, 'tarde': atendimento_hoje.turno_tarde if atendimento_hoje else False}
         painel[unidade].append(p)
-    return render_template('painel_diario.html', painel=painel, hoje=hoje_str)
+    return render_template('painel_diario.html', pacientes_por_unidade=painel, hoje=hoje_str)
 
 @app.route('/arquivo')
 @login_required
@@ -157,6 +174,7 @@ def arquivo():
         pacientes_inativos = Paciente.query.filter(Paciente.status == 'Inativo', Paciente.nome.like(termo_like)).all()
     return render_template('arquivo.html', pacientes=pacientes_inativos, busca=termo_busca)
 
+# --- Rotas de Pacientes ---
 @app.route('/paciente/<int:paciente_id>')
 @login_required
 def detalhes_paciente(paciente_id):
@@ -164,49 +182,32 @@ def detalhes_paciente(paciente_id):
     evolucoes = paciente.evolucoes.order_by(Evolucao.data.desc()).all()
     return render_template('paciente.html', paciente=paciente, evolucoes=evolucoes)
 
-@app.route('/adicionar_evolucao/<int:paciente_id>', methods=['POST'])
-@login_required
-def adicionar_evolucao(paciente_id):
-    paciente = db.get_or_404(Paciente, paciente_id)
-    hora_correta = datetime.now(pytz.timezone("America/Sao_Paulo"))
-    nova_evolucao = Evolucao(data=hora_correta, fisio=current_user.nome_completo, texto=request.form['evolucao'], paciente_id=paciente.id)
-    db.session.add(nova_evolucao)
-    hoje_str, turno = date.today().isoformat(), request.form['turno_atendimento']
-    atendimento = Atendimento.query.filter_by(paciente_id=paciente_id, data=hoje_str).first()
-    if not atendimento:
-        atendimento = Atendimento(paciente_id=paciente_id, data=hoje_str)
-        db.session.add(atendimento)
-    if turno == 'manha': atendimento.turno_manha = True
-    else: atendimento.turno_tarde = True
-    db.session.commit()
-    return redirect(url_for('detalhes_paciente', paciente_id=paciente_id))
-
-@app.route('/adicionar_paciente')
+@app.route('/paciente/adicionar', methods=['GET', 'POST'])
 @login_required
 def adicionar_paciente():
-    return render_template('form_paciente.html', paciente=None)
+    if request.method == 'POST':
+        # Esta é a lógica de salvar que estava em salvar_paciente
+        nome, data_nasc, unidade, leito, diagnostico = request.form['nome'], request.form['data_nascimento'], request.form['unidade'], request.form['leito'], request.form['diagnostico']
+        if not data_nasc:
+            flash('A data de nascimento é um campo obrigatório.', 'error'); return redirect(url_for('adicionar_paciente'))
+        idade_calculada = calcular_idade(data_nasc)
+        leito_ocupado = Paciente.query.filter_by(unidade=unidade, leito=leito, status='Ativo').first()
+        if leito_ocupado:
+            flash(f"Erro: O leito {leito} na {unidade} já está ocupado.", 'error'); return redirect(url_for('adicionar_paciente'))
+        
+        paciente_existente = Paciente.query.filter_by(nome=nome, data_nascimento=data_nasc).first()
+        if paciente_existente and paciente_existente.status == 'Inativo':
+            paciente_existente.status = 'Ativo'; paciente_existente.motivo_inativacao = None; paciente_existente.idade = idade_calculada
+            paciente_existente.leito = leito; paciente_existente.unidade = unidade; paciente_existente.diagnostico = diagnostico
+            flash(f"Paciente '{nome}' foi REATIVADO com sucesso.", 'success')
+        elif paciente_existente:
+            flash(f"Erro: Paciente '{nome}' (nascido em {data_nasc}) já está ATIVO.", 'error')
+        else:
+            novo_paciente = Paciente(nome=nome, idade=idade_calculada, leito=leito, unidade=unidade, diagnostico=diagnostico, data_nascimento=data_nasc)
+            db.session.add(novo_paciente); flash(f"Paciente '{nome}' cadastrado com sucesso!", 'success')
+        db.session.commit(); return redirect(url_for('painel_diario'))
 
-@app.route('/salvar_paciente', methods=['POST'])
-@login_required
-def salvar_paciente():
-    nome, data_nasc, unidade, leito, diagnostico = request.form['nome'], request.form['data_nascimento'], request.form['unidade'], request.form['leito'], request.form['diagnostico']
-    if not data_nasc:
-        flash('A data de nascimento é um campo obrigatório.', 'error'); return redirect(url_for('adicionar_paciente'))
-    idade_calculada = calcular_idade(data_nasc)
-    leito_ocupado = Paciente.query.filter_by(unidade=unidade, leito=leito, status='Ativo').first()
-    if leito_ocupado:
-        flash(f"Erro: O leito {leito} na {unidade} já está ocupado.", 'error'); return redirect(url_for('adicionar_paciente'))
-    paciente_existente = Paciente.query.filter_by(nome=nome, data_nascimento=data_nasc).first()
-    if paciente_existente and paciente_existente.status == 'Inativo':
-        paciente_existente.status = 'Ativo'; paciente_existente.motivo_inativacao = None; paciente_existente.idade = idade_calculada
-        paciente_existente.leito = leito; paciente_existente.unidade = unidade; paciente_existente.diagnostico = diagnostico
-        flash(f"Paciente '{nome}' foi REATIVADO com sucesso.", 'success')
-    elif paciente_existente:
-        flash(f"Erro: Paciente '{nome}' (nascido em {data_nasc}) já está ATIVO.", 'error')
-    else:
-        novo_paciente = Paciente(nome=nome, idade=idade_calculada, leito=leito, unidade=unidade, diagnostico=diagnostico, data_nascimento=data_nasc)
-        db.session.add(novo_paciente); flash(f"Paciente '{nome}' cadastrado com sucesso!", 'success')
-    db.session.commit(); return redirect(url_for('painel_diario'))
+    return render_template('form_paciente.html', paciente=None)
 
 @app.route('/paciente/editar/<int:paciente_id>', methods=['GET', 'POST'])
 @login_required
@@ -223,7 +224,25 @@ def editar_paciente(paciente_id):
         return redirect(url_for('detalhes_paciente', paciente_id=paciente.id))
     return render_template('form_paciente.html', paciente=paciente)
 
-@app.route('/mudar_unidade/<int:paciente_id>', methods=['POST'])
+@app.route('/paciente/evoluir/<int:paciente_id>', methods=['POST'])
+@login_required
+def adicionar_evolucao(paciente_id):
+    paciente = db.get_or_404(Paciente, paciente_id)
+    hora_correta = datetime.now(pytz.timezone("America/Sao_Paulo"))
+    nova_evolucao = Evolucao(data=hora_correta, fisio=current_user.nome_completo, texto=request.form['evolucao'], paciente_id=paciente.id)
+    db.session.add(nova_evolucao)
+    
+    hoje_str, turno = date.today().isoformat(), request.form['turno_atendimento']
+    atendimento = Atendimento.query.filter_by(paciente_id=paciente_id, data=hoje_str).first()
+    if not atendimento:
+        atendimento = Atendimento(paciente_id=paciente_id, data=hoje_str)
+        db.session.add(atendimento)
+    if turno == 'manha': atendimento.turno_manha = True
+    else: atendimento.turno_tarde = True
+    db.session.commit()
+    return redirect(url_for('detalhes_paciente', paciente_id=paciente_id))
+
+@app.route('/paciente/transferir/<int:paciente_id>', methods=['POST'])
 @login_required
 def mudar_unidade(paciente_id):
     paciente = db.get_or_404(Paciente, paciente_id)
@@ -235,24 +254,13 @@ def mudar_unidade(paciente_id):
         paciente.unidade = nova_unidade; db.session.commit(); flash('Paciente transferido com sucesso!', 'success')
     return redirect(url_for('detalhes_paciente', paciente_id=paciente_id))
 
-@app.route('/inativar_paciente/<int:paciente_id>', methods=['POST'])
+@app.route('/paciente/inativar/<int:paciente_id>', methods=['POST'])
 @login_required
 def inativar_paciente(paciente_id):
     paciente = db.get_or_404(Paciente, paciente_id)
     paciente.status = 'Inativo'; paciente.motivo_inativacao = request.form['motivo']
     db.session.commit(); flash('Paciente inativado com sucesso.', 'success')
     return redirect(url_for('painel_diario'))
-
-@app.route('/marcar_atendimento', methods=['POST'])
-@login_required
-def marcar_atendimento():
-    paciente_id, data_atendimento, turno = int(request.form['paciente_id']), request.form['data'], request.form['turno']
-    atendimento = Atendimento.query.filter_by(paciente_id=paciente_id, data=data_atendimento).first()
-    if not atendimento:
-        atendimento = Atendimento(paciente_id=paciente_id, data=data_atendimento); db.session.add(atendimento)
-    if turno == 'manha': atendimento.turno_manha = not atendimento.turno_manha
-    else: atendimento.turno_tarde = not atendimento.turno_tarde
-    db.session.commit(); return redirect(url_for('painel_diario'))
 
 # --- ROTAS DA ÁREA DO ADMINISTRADOR ---
 @app.route('/admin/usuarios')

@@ -1,19 +1,87 @@
-body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f4f9; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 2em; }
-        .header { display: flex; justify-content: space-between; align-items: center; background-color: #fff; padding: 1em 2em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .header h1 a { color: #333; text-decoration: none; }
-        .header-nav a { color: #007bff; text-decoration: none; margin-left: 1.5em; }
-        .header-nav a.button { background-color: #28a745; color: white; padding: 10px 15px; border-radius: 5px; }
-        .flash-error { background-color: #f8d7da; color: #721c24; padding: 1em; border: 1px solid #f5c6cb; border-radius: 5px; margin: 1em 0; text-align: center; }
+/* ================================================= */
+/* Estilos Globais e Overrides                       */
+/* ================================================= */
+body {
+    /* Um fundo um pouco mais claro que o padrão para suavizar */
+    background-color: #f8f9fa; 
+}
 
-/* Estilos da Página Principal (Painel Diário) */
-        h2 { margin: 0; }
-        .unidade-bloco { background-color: white; padding: 1em 2em; margin-top: 1.5em; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .paciente-item { border-bottom: 1px solid #eee; padding: 1em 0; }
-        .paciente-item:last-child { border-bottom: none; }
-        .paciente-info strong { font-size: 1.2em; }
-        .paciente-info em { color: #555; }
-        .atendimento-controles { margin-top: 0.5em; }
-        .atendimento-controles label { margin-right: 1em; cursor: pointer; }
-        .link-detalhes { margin-left: 1.5em; }
+/* ================================================= */
+/* Componente: Painel da Unidade (Unit Panel)        */
+/* Apenas personalizações finas, já que usamos o .card */
+/* ================================================= */
+.unit-panel .card-header {
+    background-color: #fdfdff; /* Um branco um pouco diferente para o cabeçalho */
+}
 
+.unit-panel__title {
+    font-size: 1.25rem;
+    color: #495057;
+}
+
+/* ================================================= */
+/* Componente: Item do Paciente (Patient Item)       */
+/* Este é o nosso layout personalizado mais importante */
+/* ================================================= */
+.patient-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Permite que os itens quebrem linha em telas pequenas */
+    gap: 1rem; /* Adiciona um espaço entre os grupos de elementos */
+}
+
+.patient-item__details {
+    /* Ocupa o espaço disponível, empurrando os outros para a direita */
+    flex-grow: 1; 
+}
+
+.patient-item__name {
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.patient-item__info {
+    font-size: 0.9em;
+}
+
+.patient-item__action {
+    text-decoration: none;
+}
+.patient-item__action:hover {
+    text-decoration: underline;
+}
+
+/* ================================================= */
+/* Componente: Cabeçalho do Paciente (Patient Header)*/
+/* ================================================= */
+.patient-header__name {
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.patient-header__details {
+    font-size: 0.9rem;
+}
+
+.patient-header__details span {
+    margin-right: 1rem;
+}
+
+/* ================================================= */
+/* Componente: Item da Evolução (Evolution Item)     */
+/* ================================================= */
+.evolution-item {
+    padding: 1.5rem;
+}
+
+.evolution-item__meta {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.evolution-item__text {
+    /* white-space: pre-wrap; preserva as quebras de linha e espaços do texto */
+    white-space: pre-wrap;
+    line-height: 1.7;
+}

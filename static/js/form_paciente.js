@@ -1,15 +1,11 @@
-// Espera que todo o conteúdo da página seja carregado antes de executar o script
 document.addEventListener('DOMContentLoaded', function() {
 
-    // --- PASSO 1: LER OS DADOS DO HTML ---
-    // Encontramos o container do formulário que tem os nossos dados
-    const formContainer = document.querySelector('.form-container');
-    // Lemos o atributo 'data-paciente' e convertemo-lo de uma string JSON para um objeto JavaScript
-    const paciente = JSON.parse(formContainer.dataset.paciente);
+    // --- LÓGICA PARA ATUALIZAÇÃO DINÂMICA DOS LEITOS ---
 
-    // --- O RESTO DO TEU CÓDIGO (AGORA NUM AMBIENTE JS PURO) ---
+    // Alteramos a linha abaixo para usar getElementById, que é mais específico
+    const formCard = document.getElementById('form-paciente-card');
+    const paciente = JSON.parse(formCard.dataset.paciente);
 
-    // Referências aos nossos elementos HTML importantes
     const unidadeSelect = document.getElementById('unidade');
     const leitoContainer = document.getElementById('leito-container');
 
@@ -19,65 +15,69 @@ document.addEventListener('DOMContentLoaded', function() {
 
         leitoContainer.innerHTML = '';
 
-        if (unidadeSelecionada === '1ª Enfermaria') {
+        if (unidadeSelecionada === '1ª Enfermaria' || unidadeSelecionada === 'UTI') {
             let select = document.createElement('select');
             select.id = 'leito';
             select.name = 'leito';
+            select.className = 'form-select';
             select.required = true;
 
-            for (let i = 101; i <= 114; i++) {
+            let options = [];
+            if (unidadeSelecionada === '1ª Enfermaria') {
+                for (let i = 101; i <= 114; i++) { options.push(String(i)); }
+            } else { // UTI
+                for (let i = 1; i <= 6; i++) { options.push(String(i)); }
+            }
+
+            options.forEach(num => {
                 let option = document.createElement('option');
-                option.value = i;
-                // Usamos a concatenação para evitar qualquer erro de linter
-                option.textContent = 'Leito ' + i;
-                if (String(i) === leitoAtual) {
+                option.value = num;
+                option.textContent = `Leito ${num}`;
+                if (num === String(leitoAtual)) {
                     option.selected = true;
                 }
                 select.appendChild(option);
-            }
+            });
+            
             leitoContainer.appendChild(select);
 
-        } else if (unidadeSelecionada === 'UTI') {
-            let select = document.createElement('select');
-            select.id = 'leito';
-            select.name = 'leito';
-            select.required = true;
-
-            for (let i = 1; i <= 6; i++) {
-                let option = document.createElement('option');
-                option.value = i;
-                option.textContent = 'Leito ' + i;
-                if (String(i) === leitoAtual) {
-                    option.selected = true;
-                }
-                select.appendChild(option);
-            }
-            leitoContainer.appendChild(select);
         } else {
-            leitoContainer.innerHTML = '<input type="text" id="leito" name="leito" value="' + leitoAtual + '" required>';
+            let input = document.createElement('input');
+            input.type = 'text';
+            input.id = 'leito';
+            input.name = 'leito';
+            input.className = 'form-control';
+            input.value = leitoAtual;
+            input.required = true;
+            leitoContainer.appendChild(input);
         }
     }
 
-    // Adiciona os "ouvintes" de eventos
-    unidadeSelect.addEventListener('change', atualizarCampoLeito);
+    if (unidadeSelect) {
+        unidadeSelect.addEventListener('change', atualizarCampoLeito);
+    }
     
-    // Executa a função uma vez para o estado inicial
-    atualizarCampoLeito();
+    if (formCard) { // Adicionamos uma verificação para segurança
+        atualizarCampoLeito();
+    }
 
+
+    // --- LÓGICA PARA FORMATAÇÃO AUTOMÁTICA DA DATA ---
     const dataNascimentoInput = document.getElementById('data_nascimento');
-    dataNascimentoInput.addEventListener('input', function (e) {
-        let value = e.target.value.replace(/\D/g, '');
-        
-        if (value.length > 8) {
-            value = value.slice(0, 8);
-        }
 
-        if (value.length > 4) {
-            value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4);
-        } else if (value.length > 2) {
-            value = value.slice(0, 2) + '/' + value.slice(2);
-        }
+    if (dataNascimentoInput) {
+        dataNascimentoInput.addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+            
+            if (value.length > 8) { value = value.slice(0, 8); }
 
-        e.target.value = value;
-    });
+            if (value.length > 4) {
+                value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4);
+            } else if (value.length > 2) {
+                value = value.slice(0, 2) + '/' + value.slice(2);
+            }
+
+            e.target.value = value;
+        });
+    }
 });

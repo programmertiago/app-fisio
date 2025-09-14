@@ -3,62 +3,56 @@
 {% block title %}{% if paciente %}Editar Paciente{% else %}Cadastrar Novo Paciente{% endif %}{% endblock %}
 
 {% block content %}
-<style>
-    /* O teu CSS continua aqui, sem alterações */
-    .form-container { max-width: 600px; margin: 1em auto; background-color: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .form-container h2 { margin-top: 0; }
-    label { display: block; margin-bottom: 0.5em; font-weight: bold; }
-    input, select, textarea { width: 100%; padding: 10px; margin-bottom: 1em; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-    .form-actions { display: flex; justify-content: flex-end; gap: 1em; margin-top: 1em;}
-    .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; color: white !important; text-decoration: none; font-size: 1em;}
-    .btn-primary { background-color: #007bff; }
-    .btn-secondary { background-color: #6c757d; }
-</style>
+    <div class="card" id="form-paciente-card" data-paciente='{{ paciente.to_dict()|tojson|safe if paciente else 'null' }}'>
+        <div class="card-header">
+            <h2 class="mb-0">{% if paciente %}Editar Paciente{% else %}Cadastrar Novo Paciente{% endif %}</h2>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('editar_paciente', paciente_id=paciente.id) if paciente else url_for('adicionar_paciente') }}" method="POST">
+                
+                <div class="mb-3">
+                    <label for="nome" class="form-label">Nome Completo:</label>
+                    <input type="text" class="form-control" id="nome" name="nome" value="{{ paciente.nome if paciente else '' }}" required>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="data_nascimento" class="form-label">Data de Nascimento:</label>
+                        <input type="text" class="form-control" id="data_nascimento" name="data_nascimento" value="{{ paciente.data_nascimento if paciente else '' }}" placeholder="DD/MM/AAAA" required>
+                    </div>
+                </div>
 
-<div class="form-container" data-paciente='{{ paciente|tojson|safe if paciente else 'null' }}'>
-    <h2>{% if paciente %}Editar Paciente{% else %}Cadastrar Novo Paciente{% endif %}</h2> <br>
-    
-    <form action="{{ url_for('editar_paciente', paciente_id=paciente.id) if paciente else url_for('salvar_paciente') }}" method="POST">
-        <div>
-            <label for="nome">Nome Completo:</label>
-            <input type="text" id="nome" name="nome" value="{{ paciente.nome if paciente else '' }}" required>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="unidade" class="form-label">Unidade de Internação:</label>
+                        <select class="form-select" id="unidade" name="unidade" required>
+                            <option value="" {% if not paciente %}selected{% endif %} disabled>Selecione uma unidade...</option>
+                            <option value="1ª Enfermaria" {% if paciente and paciente.unidade == '1ª Enfermaria' %}selected{% endif %}>1ª Enfermaria</option>
+                            <option value="2ª Enfermaria" {% if paciente and paciente.unidade == '2ª Enfermaria' %}selected{% endif %}>2ª Enfermaria</option>
+                            <option value="3ª Enfermaria" {% if paciente and paciente.unidade == '3ª Enfermaria' %}selected{% endif %}>3ª Enfermaria</option>
+                            <option value="UTI" {% if paciente and paciente.unidade == 'UTI' %}selected{% endif %}>UTI</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="leito" class="form-label">Leito:</label>
+                        <div id="leito-container">
+                            <input type="text" class="form-control" id="leito" name="leito" value="{{ paciente.leito if paciente else '' }}" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="diagnostico" class="form-label">Breve Diagnóstico / Motivo da Internação:</label>
+                    <textarea class="form-control" id="diagnostico" name="diagnostico" rows="3" required>{{ paciente.diagnostico if paciente else '' }}</textarea>
+                </div>
+                
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="{{ url_for('detalhes_paciente', paciente_id=paciente.id) if paciente else url_for('painel_diario') }}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <div>
-            <label for="data_nascimento">Data de Nascimento:</label>
-            <input type="text" id="data_nascimento" name="data_nascimento" value="{{ paciente.data_nascimento if paciente else '' }}" placeholder="DD/MM/AAAA" required>
-        </div>
-        
-        <div>
-            <label for="unidade">Unidade de Internação:</label>
-            <select id="unidade" name="unidade" required>
-                <option value="" {% if not paciente %}selected{% endif %} disabled>Selecione uma unidade...</option>
-                <option value="1ª Enfermaria" {% if paciente and paciente.unidade == '1ª Enfermaria' %}selected{% endif %}>1ª Enfermaria</option>
-                <option value="2ª Enfermaria" {% if paciente and paciente.unidade == '2ª Enfermaria' %}selected{% endif %}>2ª Enfermaria</option>
-                <option value="3ª Enfermaria" {% if paciente and paciente.unidade == '3ª Enfermaria' %}selected{% endif %}>3ª Enfermaria</option>
-                <option value="UTI" {% if paciente and paciente.unidade == 'UTI' %}selected{% endif %}>UTI</option>
-            </select>
-        </div>
-
-        <div>
-            <label for="leito">Leito:</label>
-            <div id="leito-container">
-                <input type="text" id="leito" name="leito" value="{{ paciente.leito if paciente else '' }}" required>
-            </div>
-        </div>
-        
-        <div>
-            <label for="diagnostico">Breve Diagnóstico / Motivo da Internação:</label>
-            <textarea id="diagnostico" name="diagnostico" rows="3" required>{{ paciente.diagnostico if paciente else '' }}</textarea>
-        </div>
-        
-        <div class="form-actions">
-            <a href="{{ url_for('detalhes_paciente', paciente_id=paciente.id) if paciente else url_for('painel_diario') }}" class="btn btn-secondary">Cancelar</a>
-            <button type="submit" class="btn btn-primary">Salvar</button>
-        </div>
-    </form>
-</div>
-
-<script src="{{ url_for('static', filename='js/form_paciente.js') }}"></script>
-
+    <script src="{{ url_for('static', filename='js/form_paciente.js') }}"></script>
 {% endblock %}
